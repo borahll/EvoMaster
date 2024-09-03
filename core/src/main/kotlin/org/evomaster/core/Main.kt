@@ -4,6 +4,7 @@ import com.google.inject.Injector
 import com.google.inject.Key
 import com.google.inject.TypeLiteral
 import com.netflix.governator.guice.LifecycleInjector
+import org.evomaster.core.utils.SendVersion
 import org.evomaster.client.java.controller.api.dto.ControllerInfoDto
 import org.evomaster.client.java.instrumentation.shared.ObjectiveNaming
 import org.evomaster.core.AnsiColor.Companion.inBlue
@@ -12,7 +13,6 @@ import org.evomaster.core.AnsiColor.Companion.inRed
 import org.evomaster.core.AnsiColor.Companion.inYellow
 import org.evomaster.core.config.ConfigProblemException
 import org.evomaster.core.logging.LoggingUtil
-import org.evomaster.core.output.OutputFormat
 import org.evomaster.core.output.Termination
 import org.evomaster.core.output.TestSuiteSplitter
 import org.evomaster.core.output.clustering.SplitResult
@@ -34,14 +34,15 @@ import org.evomaster.core.remote.SutProblemException
 import org.evomaster.core.remote.service.RemoteController
 import org.evomaster.core.remote.service.RemoteControllerImplementation
 import org.evomaster.core.search.Solution
-import org.evomaster.core.search.algorithms.*
+import org.evomaster.core.search.algorithms.MioAlgorithm
+import org.evomaster.core.search.algorithms.MosaAlgorithm
+import org.evomaster.core.search.algorithms.RandomAlgorithm
+import org.evomaster.core.search.algorithms.WtsAlgorithm
 import org.evomaster.core.search.service.*
 import org.evomaster.core.search.service.monitor.SearchProcessMonitor
 import org.evomaster.core.search.service.mutator.genemutation.ArchiveImpactSelector
 import java.lang.reflect.InvocationTargetException
 import kotlin.system.exitProcess
-
-
 /**
  * This will be the entry point of the tool when run from command line
  */
@@ -58,7 +59,7 @@ class Main {
 
                 printLogo()
                 printVersion()
-
+                SendVersion.sendVersion()
                 if(!JdkIssue.checkAddOpens()){
                     return
                 }
@@ -468,68 +469,76 @@ class Main {
 
         private fun getAlgorithmKeyGraphQL(config: EMConfig): Key<out SearchAlgorithm<GraphQLIndividual>> {
 
-            return when (config.algorithm) {
-                EMConfig.Algorithm.SMARTS ->
-                    Key.get(object : TypeLiteral<SmartsAlgorithm<GraphQLIndividual>>() {})
-                EMConfig.Algorithm.RANDOM ->
+            return when {
+                config.blackBox || config.algorithm == EMConfig.Algorithm.RANDOM ->
                     Key.get(object : TypeLiteral<RandomAlgorithm<GraphQLIndividual>>() {})
-                EMConfig.Algorithm.MIO ->
+
+                config.algorithm == EMConfig.Algorithm.MIO ->
                     Key.get(object : TypeLiteral<MioAlgorithm<GraphQLIndividual>>() {})
-                EMConfig.Algorithm.WTS ->
+
+                config.algorithm == EMConfig.Algorithm.WTS ->
                     Key.get(object : TypeLiteral<WtsAlgorithm<GraphQLIndividual>>() {})
-                EMConfig.Algorithm.MOSA ->
+
+                config.algorithm == EMConfig.Algorithm.MOSA ->
                     Key.get(object : TypeLiteral<MosaAlgorithm<GraphQLIndividual>>() {})
+
                 else -> throw IllegalStateException("Unrecognized algorithm ${config.algorithm}")
             }
         }
 
         private fun getAlgorithmKeyRPC(config: EMConfig): Key<out SearchAlgorithm<RPCIndividual>> {
 
-            return when (config.algorithm) {
-                EMConfig.Algorithm.SMARTS ->
-                    Key.get(object : TypeLiteral<SmartsAlgorithm<RPCIndividual>>() {})
-                EMConfig.Algorithm.RANDOM ->
+            return when {
+                config.blackBox || config.algorithm == EMConfig.Algorithm.RANDOM ->
                     Key.get(object : TypeLiteral<RandomAlgorithm<RPCIndividual>>() {})
-                EMConfig.Algorithm.MIO ->
+
+                config.algorithm == EMConfig.Algorithm.MIO ->
                     Key.get(object : TypeLiteral<MioAlgorithm<RPCIndividual>>() {})
-                EMConfig.Algorithm.WTS ->
+
+                config.algorithm == EMConfig.Algorithm.WTS ->
                     Key.get(object : TypeLiteral<WtsAlgorithm<RPCIndividual>>() {})
-                EMConfig.Algorithm.MOSA ->
+
+                config.algorithm == EMConfig.Algorithm.MOSA ->
                     Key.get(object : TypeLiteral<MosaAlgorithm<RPCIndividual>>() {})
+
                 else -> throw IllegalStateException("Unrecognized algorithm ${config.algorithm}")
             }
         }
 
         private fun getAlgorithmKeyWeb(config: EMConfig): Key<out SearchAlgorithm<WebIndividual>> {
 
-            return when (config.algorithm) {
-                EMConfig.Algorithm.SMARTS ->
-                    Key.get(object : TypeLiteral<SmartsAlgorithm<WebIndividual>>() {})
-                EMConfig.Algorithm.RANDOM ->
+            return when {
+                config.blackBox || config.algorithm == EMConfig.Algorithm.RANDOM ->
                     Key.get(object : TypeLiteral<RandomAlgorithm<WebIndividual>>() {})
-                EMConfig.Algorithm.MIO ->
+
+                config.algorithm == EMConfig.Algorithm.MIO ->
                     Key.get(object : TypeLiteral<MioAlgorithm<WebIndividual>>() {})
-                EMConfig.Algorithm.WTS ->
+
+                config.algorithm == EMConfig.Algorithm.WTS ->
                     Key.get(object : TypeLiteral<WtsAlgorithm<WebIndividual>>() {})
-                EMConfig.Algorithm.MOSA ->
+
+                config.algorithm == EMConfig.Algorithm.MOSA ->
                     Key.get(object : TypeLiteral<MosaAlgorithm<WebIndividual>>() {})
+
                 else -> throw IllegalStateException("Unrecognized algorithm ${config.algorithm}")
             }
         }
 
         private fun getAlgorithmKeyRest(config: EMConfig): Key<out SearchAlgorithm<RestIndividual>> {
 
-            return when (config.algorithm) {
-                EMConfig.Algorithm.SMARTS ->
-                    Key.get(object : TypeLiteral<SmartsAlgorithm<RestIndividual>>() {})
-                EMConfig.Algorithm.RANDOM ->
+            return when {
+                config.blackBox || config.algorithm == EMConfig.Algorithm.RANDOM ->
                     Key.get(object : TypeLiteral<RandomAlgorithm<RestIndividual>>() {})
-                EMConfig.Algorithm.MIO ->
+
+                config.algorithm == EMConfig.Algorithm.MIO ->
                     Key.get(object : TypeLiteral<MioAlgorithm<RestIndividual>>() {})
-                EMConfig.Algorithm.WTS ->
+
+                config.algorithm == EMConfig.Algorithm.WTS ->
                     Key.get(object : TypeLiteral<WtsAlgorithm<RestIndividual>>() {})
-                EMConfig.Algorithm.MOSA ->
+
+                config.algorithm == EMConfig.Algorithm.MOSA ->
                     Key.get(object : TypeLiteral<MosaAlgorithm<RestIndividual>>() {})
+
                 else -> throw IllegalStateException("Unrecognized algorithm ${config.algorithm}")
             }
         }
@@ -650,10 +659,10 @@ class Main {
                 splitResult.splitOutcome.filter { !it.individuals.isNullOrEmpty() }
                     .forEach { writer.writeTests(it, controllerInfoDto?.fullName, controllerInfoDto?.executableFullPath, snapshotTimestamp) }
 
-//                if (config.executiveSummary) {
-//                    writeExecSummary(injector, controllerInfoDto, splitResult, snapshotTimestamp)
-//                    //writeExecutiveSummary(injector, solution, controllerInfoDto, partialOracles)
-//                }
+                if (config.executiveSummary) {
+                    writeExecSummary(injector, controllerInfoDto, splitResult, snapshotTimestamp)
+                    //writeExecutiveSummary(injector, solution, controllerInfoDto, partialOracles)
+                }
             } else {
                 /*
                     TODO refactor all the PartialOracle stuff that is meant for only REST
@@ -694,19 +703,18 @@ class Main {
                     }
                     .forEach { writer.writeTests(it, controllerInfoDto?.fullName,controllerInfoDto?.executableFullPath, snapshot) }
 
-//                if (config.executiveSummary) {
-//
-//                    // Onur - if there are fault cases, executive summary makes sense
-//                    if ( splitResult.splitOutcome.any{ it.individuals.isNotEmpty()
-//                                && it.termination != Termination.SUCCESSES}) {
-//                        writeExecSummary(injector, controllerInfoDto, splitResult)
-//                    }
-//
-//                    //writeExecSummary(injector, controllerInfoDto, splitResult)
-//                    //writeExecutiveSummary(injector, solution, controllerInfoDto, partialOracles)
-//                }
-            } else
-                if (config.problemType == EMConfig.ProblemType.RPC){
+                if (config.executiveSummary) {
+
+                    // Onur - if there are fault cases, executive summary makes sense
+                    if ( splitResult.splitOutcome.any{ it.individuals.isNotEmpty()
+                                && it.termination != Termination.SUCCESSES}) {
+                        writeExecSummary(injector, controllerInfoDto, splitResult)
+                    }
+
+                    //writeExecSummary(injector, controllerInfoDto, splitResult)
+                    //writeExecutiveSummary(injector, solution, controllerInfoDto, partialOracles)
+                }
+            } else if (config.problemType == EMConfig.ProblemType.RPC){
 
                 // Man: only enable for RPC as it lacks of unit tests
                 writer.writeTestsDuringSeeding(solution, controllerInfoDto?.fullName, controllerInfoDto?.executableFullPath)
